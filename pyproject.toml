@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ras-spt-discord-bot"
+version = "0.1.0"
+description = ""
+authors = ["Eszter, Gábor <mrxaxen@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+discord-py = "^2.5.2"
+httpx = "^0.28.1"
+fastapi = {extras = ["standard"], version = "^0.115.11"}
+dotenv = "^0.9.9"
+uvicorn = "^0.34.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
