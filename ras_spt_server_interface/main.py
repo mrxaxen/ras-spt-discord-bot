@@ -28,7 +28,7 @@ async def server_start(server_op_param: str):
 
     try:
         server_op = CMD_SERVER_OPS[server_op_param]
-        cmd = f'nssm {server_op} {RAS_SPT_SERVER_SERVICE_NAME}'.split()
+        cmd = f'nssm {server_op} "{RAS_SPT_SERVER_SERVICE_NAME}"'.split()
         process = subprocess.run(cmd)
     except KeyError:
         # TODO: LOG
