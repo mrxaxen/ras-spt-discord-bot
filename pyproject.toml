@@ -23,7 +23,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry-pyinstaller-plugin.scripts]
-ras-spt-server-interface = { source = "ras_spt__server_interface/main.py", type = "onefile", bundle = false }
+ras-spt-server-interface = { source = "ras_spt_server_interface/main.py", type = "onefile", bundle = false }
 
 [tool.poetry.scripts]
-ras-spt-mod-installer='ras_spt__server_interface.main:main'
+ras-spt-mod-installer='ras_spt_server_interface.main:main'

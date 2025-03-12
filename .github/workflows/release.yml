@@ -1,0 +1,32 @@
+name: Release installer
+on: 
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Run image
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: "1.6.1"
+      - name: View poetry --help
+        run: poetry --help
+      - name: Install pyinstaller plugin
+        run: poetry self add poetry-pyinstaller-plugin
+      - name: Build artifacts
+        run: poetry build
+      - name: upload windows artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.SPT_RELEASE_TOKEN }}
+          files: |
+            dist/pyinstaller/win_amd64/*
