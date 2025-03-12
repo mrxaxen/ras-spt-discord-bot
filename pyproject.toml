@@ -4,6 +4,10 @@ version = "0.1.0"
 description = ""
 authors = ["Eszter, Gábor <mrxaxen@gmail.com>"]
 readme = "README.md"
+packages = [
+    {include = "ras_spt_discord_bot"},
+    {include = "ras_spt_server_interface"}
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -17,3 +21,9 @@ uvicorn = "^0.34.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry-pyinstaller-plugin.scripts]
+ras-spt-server-interface = { source = "ras_spt__server_interface/main.py", type = "onefile", bundle = false }
+
+[tool.poetry.scripts]
+ras-spt-mod-installer='ras_spt__server_interface.main:main'
