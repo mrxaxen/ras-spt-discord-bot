@@ -29,7 +29,9 @@ async def server_start(server_op_param: str):
     try:
         server_op = CMD_SERVER_OPS[server_op_param]
         cmd = f'nssm {server_op} "{RAS_SPT_SERVER_SERVICE_NAME}"'.split()
-        process = subprocess.run(cmd)
+        print(f'Command to execute: {cmd}')
+        process = subprocess.run(cmd, capture_output=True)
+        print(f'Service returned: {process.stdout.decode()}\n{process.stderr.decode()}')
     except KeyError:
         # TODO: LOG
         print(f'No such operation found for the spt-server service: {server_op_param}')
