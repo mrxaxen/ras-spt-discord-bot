@@ -125,7 +125,7 @@ async def restart_headless(ctx: commands.Context):
     assert RAS_SPT_HEADLESS_CONTAINER_NAME
     container = get_headless_container()
     if container is not None and not is_headless_restarting():
-        docker.restart(RAS_SPT_HEADLESS_CONTAINER_NAME)
+        asyncio.to_thread(docker.restart, RAS_SPT_HEADLESS_CONTAINER_NAME)  # type: ignore
 
     restart_success = False
     for i in range(15):
