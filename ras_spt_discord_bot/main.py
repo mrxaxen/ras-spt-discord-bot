@@ -79,9 +79,10 @@ async def ping_server(ctx: commands.Context):
     assert RAS_SPT_WEBSERVER_URL_PING
 
     author = ctx.author
+    role = discord.utils.get(ctx.guild.roles, name="EFT Player")
     conditions = [
         isinstance(author, discord.Member),
-        author.get_role(RAS_SPT_DISCORD_EFT_ROLE_ID) is not None,  # type: ignore
+        role in ctx.author.roles
     ]
     if not all(conditions):
         return
@@ -112,11 +113,11 @@ async def ping_server(ctx: commands.Context):
 @bot.slash_command(name=CMD_RESTART_SPT_HEADLESS)
 async def restart_headless(ctx: commands.Context):
     author = ctx.author
+    role = discord.utils.get(ctx.guild.roles, name="EFT Player")
     conditions = [
         is_headless_online(),
-        is_headless_restarting(),
-        isinstance(author, discord.Member),
-        author.get_role(RAS_SPT_DISCORD_EFT_ROLE_ID) is not None,  # type: ignore
+        not is_headless_restarting(),
+        role in ctx.author.roles
     ]
     if not all(conditions):
         print('Condition not met.')
