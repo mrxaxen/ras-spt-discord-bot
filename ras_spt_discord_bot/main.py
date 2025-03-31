@@ -112,7 +112,6 @@ async def ping_server(ctx: commands.Context):
 
 @bot.slash_command(name=CMD_RESTART_SPT_HEADLESS)
 async def restart_headless(ctx: commands.Context):
-    author = ctx.author
     role = discord.utils.get(ctx.guild.roles, name="EFT Player")
     conditions = [
         is_headless_online(),
@@ -131,11 +130,15 @@ async def restart_headless(ctx: commands.Context):
     restart_success = False
     for i in range(15):
         await ctx.channel.send('Restarting headless client..')
-        restart_success = docker.ps(True, filters=filters)[0].state.running  # type: ignore
+        headless_container = get_headless_container()
+
+        if headless_container is not None:
+            restart_success = headless_container.state.running
+
         if restart_success:
             await ctx.channel.send('Server is running!')
             break
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
 
     if not restart_success:
         await ctx.channel.send(
