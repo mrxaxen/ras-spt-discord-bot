@@ -1,193 +1,183 @@
-# TODO: Apparently most of this is simply wrong, RTFM....
+import asyncio
 import os
+import discord
+import httpx
 import zlib
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import List
-from httpx import Client
-from discord import InteractionResponseType, InteractionType
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
-from pydantic import TypeAdapter
-
-from ras_spt_discord_bot.models import CurrentPlayer
+from python_on_whales import docker
+from python_on_whales.components.container.cli_wrapper import DockerContainerListFilters
 
 load_dotenv()
 
-CMD_PING_SPT_SERVER = "spt-ping"
-CMD_STOP_SPT_SERVER = "spt-stop"
-CMD_START_SPT_SERVER = "spt-start"
-CMD_RESTART_SPT_SERVER = "spt-restart"
-CMD_CURRENTLY_PLAYING = "spt-playing"
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+
+CMD_PING_SPT_SERVER = "$spt-ping"
+CMD_STOP_SPT_SERVER = "$spt-stop"
+CMD_START_SPT_SERVER = "$spt-start"
+CMD_RESTART_SPT_SERVER = "$spt-dedicated-restart"
+CMD_RESTART_SPT_HEADLESS = "$spt-headless-restart"
+CMD_CURRENTLY_PLAYING = "$spt-playing"
+CMD_SERVER_HELLO = "$spt-hello"
+
 RAS_SPT_WEBSERVER_URL_PING = os.getenv('RAS_SPT_WEBSERVER_URL_PING')
 RAS_SPT_WEBSERVER_URL_CURRENTLY_PLAYING = os.getenv('RAS_SPT_WEBSERVER_URL_CURRENTLY_PLAYING')
 RAS_SPT_SERVER_INTERFACE_URL_STOP = os.getenv('RAS_SPT_SERVER_INTERFACE_URL_STOP')
 RAS_SPT_SERVER_INTERFACE_URL_START = os.getenv('RAS_SPT_SERVER_INTERFACE_URL_START')
 RAS_SPT_SERVER_INTERFACE_URL_RESTART = os.getenv('RAS_SPT_SERVER_INTERFACE_URL_RESTART')
+RAS_SPT_DISCORD_EFT_ROLE_ID = int(os.getenv('RAS_SPT_DISCORD_EFT_ROLE_ID'))
+RAS_SPT_HEADLESS_CONTAINER_NAME = os.getenv('RAS_SPT_HEADLESS_CONTAINER_NAME')
 
-app = FastAPI()
-client = Client()
+
+intents = discord.Intents.default()
+intents.message_content = True
+client = discord.Client(intents=intents)
 
 
-class SPTCommand(metaclass=ABCMeta):
+class BotCommand(ABC):
 
-    @classmethod
-    def __subclasshook__(cls, subclass: type, /) -> bool:
-        attributes = ['matches', 'apply']
-        callables = [subclass.matches, subclass.apply]
-        return all(hasattr(subclass, attr) for attr in attributes) and all(callable(c) for c in callables) or NotImplemented
+    def __init__(self, command) -> None:
+        self.command = command
+
+    async def is_headless_online(self) -> bool:
+        filters = {
+            'name': RAS_SPT_HEADLESS_CONTAINER_NAME
+        }
+        headless_container = docker.ps(True, filters=filters)[0]  # type: ignore
+        conditions = [
+            not headless_container.state.restarting,
+            headless_container.state.running,
+        ]
+        return all(conditions)
+
+    async def is_headless_restarting(self) -> bool:
+        filters = {
+            'name': RAS_SPT_HEADLESS_CONTAINER_NAME
+        }
+        headless_container = docker.ps(True, filters=filters)[0]  # type: ignore
+        return headless_container.state.restarting is not None and headless_container.state.restarting
 
     @abstractmethod
-    def matches(self, data):
+    async def exec(self, message: discord.Message):
         raise NotImplementedError
 
     @abstractmethod
-    def apply(self):
+    async def condition(self, message: discord.Message):
         raise NotImplementedError
 
 
-class SPTPing(SPTCommand):
+class ServerHelloCommand(BotCommand):
 
-    def matches(self, data):
-        if RAS_SPT_WEBSERVER_URL_PING is None:
-            raise Exception('Ping endpoint url not defined.')
-        return data == CMD_PING_SPT_SERVER
+    def __init__(self, command) -> None:
+        super().__init__(command=command)
 
-    def apply(self):
+    async def exec(self, message: discord.Message):
+        await message.channel.send('Hello!')
+
+    async def condition(self, message: discord.Message):
+        return message.content.startswith(self.command())
+
+
+class SPTPingCommand(BotCommand):
+
+    def __init__(self, command) -> None:
+        super().__init__(command=command)
+
+    async def exec(self, message: discord.Message):
         assert RAS_SPT_WEBSERVER_URL_PING
-        try:
-            response = client.get(url=RAS_SPT_WEBSERVER_URL_PING)
-            is_online = "ONLINE" if response.status_code == 200 else "OFFLINE"
-        except Exception:
-            # TODO: LOG
-            is_online = "OFFLINE"
 
-        return {
-            "type": InteractionResponseType.channel_message,
-            "data": {
-                "content": f"The server is {is_online} at the moment."
-            }
+        http_client = httpx.AsyncClient()
+        response = await http_client.request(method='GET', url=RAS_SPT_WEBSERVER_URL_PING)
+        response.raise_for_status()
+
+        content = zlib.decompress(response.content).decode()
+        dedicated_is_online = None
+        if 'pong' in content or 'PONG' in content:
+            dedicated_is_online = 'online'
+        else:
+            dedicated_is_online = 'offline'
+        await message.channel.send(f'RAS SPT Dedicated server is {dedicated_is_online}')
+
+        headless_is_online = None
+        if self.is_headless_online():
+            if self.is_headless_restarting():
+                headless_is_online = 'restarting'
+            else:
+                headless_is_online = 'online'
+        else:
+            headless_is_online = 'offline'
+        await message.channel.send(f'RAS SPT Headless client is {headless_is_online}!')
+
+    async def condition(self, message: discord.Message):
+        author = message.author
+        conditions = [
+            message.content.startswith(self.command),
+            isinstance(author, discord.Member),
+            author.get_role(RAS_SPT_DISCORD_EFT_ROLE_ID) is not None,  # type: ignore
+        ]
+        return all(conditions)
+
+
+class SPTHeadlessRestartCommand(BotCommand):
+
+    def __init__(self, command) -> None:
+        super().__init__(command=command)
+
+    async def exec(self, message: discord.Message):
+        assert RAS_SPT_HEADLESS_CONTAINER_NAME
+        filters = {
+            'name': RAS_SPT_HEADLESS_CONTAINER_NAME
         }
+        container = docker.ps(True, filters=filters)[0]  # type: ignore
+        if not container.state.restarting and container.state.running:
+            docker.restart(RAS_SPT_HEADLESS_CONTAINER_NAME)
 
-
-class SPTStop(SPTCommand):
-
-    def matches(self, data):
-        if RAS_SPT_SERVER_INTERFACE_URL_STOP is None:
-            raise Exception('Server stop endpoint url not defined.')
-        return data == CMD_STOP_SPT_SERVER
-
-    def apply(self):
-        assert RAS_SPT_SERVER_INTERFACE_URL_STOP
-        try:
-            response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_STOP)
-            stop_success = "SUCCESSFUL" if response.status_code == 200 else "FAILED"
-        except Exception:
-            # TODO: LOG
-            stop_success = "FAILED"
-
-        return {
-            "type": InteractionResponseType.channel_message,
-            "data": {
-                "content": f"Server stop is {stop_success}."
-            }
-        }
-
-
-class SPTStart(SPTCommand):
-
-    def matches(self, data):
-        if RAS_SPT_SERVER_INTERFACE_URL_START is None:
-            raise Exception('Server start endpoint url not defined.')
-        return data == CMD_START_SPT_SERVER
-
-    def apply(self):
-        assert RAS_SPT_SERVER_INTERFACE_URL_START
-        try:
-            response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_START)
-            start_success = "SUCCESSFUL" if response.status_code == 200 else "FAILED"
-        except Exception:
-            # TODO: LOG
-            start_success = "FAILED"
-
-        return {
-            "type": InteractionResponseType.channel_message,
-            "data": {
-                "content": f"Server start is {start_success}."
-            }
-        }
-
-
-class SPTRestart(SPTCommand):
-
-    def matches(self, data):
-        if RAS_SPT_SERVER_INTERFACE_URL_RESTART is None:
-            raise Exception('Server restart endpoint url not defined.')
-        return data == CMD_RESTART_SPT_SERVER
-
-    def apply(self):
-        assert RAS_SPT_SERVER_INTERFACE_URL_RESTART
-        try:
-            response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_RESTART)
-            restart_success = "SUCCESSFUL" if response.status_code == 200 else "FAILED"
-        except Exception:
-            # TODO: LOG
-            restart_success = "FAILED"
-
-        return {
-            "type": InteractionResponseType.channel_message,
-            "data": {
-                "content": f"Server restart is {restart_success}."
-            }
-        }
-
-
-# TODO: Finish currently playing
-class SPTCurrentlyPlaying(SPTCommand):
-
-    def matches(self, data):
-        if RAS_SPT_WEBSERVER_URL_CURRENTLY_PLAYING is None:
-            raise Exception('Currently playing endpoint url not defined.')
-        return data == CMD_CURRENTLY_PLAYING
-
-    def apply(self):
-        assert RAS_SPT_WEBSERVER_URL_CURRENTLY_PLAYING
-        try:
-            response = client.get(url=RAS_SPT_WEBSERVER_URL_CURRENTLY_PLAYING)
-            adapter = TypeAdapter(List[CurrentPlayer])
-            current_players = adapter.validate_json(zlib.decompress(response.content))
-        except Exception:
-            # TODO: LOG
-            is_online = "OFFLINE"
-
-        return {
-            "type": InteractionResponseType.channel_message,
-            "data": {
-                "content": f"Current players placeholder text"
-            }
-        }
-
-
-@app.post('/interactions')
-async def interactions(request: Request):
-    id, req_type, data = await request.body()
-
-    if req_type == InteractionType.ping:
-        return {"type": InteractionResponseType.pong}
-
-    if req_type == InteractionType.application_command:
-        commands = [SPTPing(), SPTStop(), SPTStart(), SPTRestart(), SPTCurrentlyPlaying()]
-        is_cmd_found = False
-        for cmd in commands:
-            if cmd.matches(data):
-                is_cmd_found = True
-                cmd.apply()
+        restart_success = False
+        for i in range(15):
+            await message.channel.send('Restarting headless client..')
+            restart_success = docker.ps(True, filters=filters)[0].state.running  # type: ignore
+            if restart_success:
+                await message.channel.send('Server is running!')
                 break
+            await asyncio.sleep(5)
 
-        if not is_cmd_found:
-            print(f"Unknown command: {data}")
-            raise HTTPException(status_code=400, detail='Unknown command')
+        if not restart_success:
+            await message.channel.send(
+                f'Server restart timed out, check status with {CMD_PING_SPT_SERVER}, and try again!')
 
-    print(f"Unknown interaction type: {req_type}")
-    raise HTTPException(status_code=400, detail='Unknown interaction type')
+    async def condition(self, message: discord.Message):
+        author = message.author
+        conditions = [
+            self.is_headless_online(),
+            self.is_headless_restarting(),
+            isinstance(author, discord.Member),
+            author.get_role(RAS_SPT_DISCORD_EFT_ROLE_ID) is not None,  # type: ignore
+        ]
+        return all(conditions)
+
+
+@client.event
+async def on_ready():
+    print(f'Logged in as {client.user}')
+
+
+@client.event
+async def on_message(message):
+    cmd_requests: List[BotCommand] = [
+        ServerHelloCommand(CMD_SERVER_HELLO),
+        SPTPingCommand(CMD_PING_SPT_SERVER),
+        SPTHeadlessRestartCommand(CMD_RESTART_SPT_HEADLESS)
+    ]
+    if message.author == client.user:
+        return
+
+
+def main():
+    assert DISCORD_TOKEN
+    client.run(DISCORD_TOKEN)
+
+
+if __name__ == "__main__":
+    main()

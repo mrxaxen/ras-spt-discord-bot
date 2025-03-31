@@ -1129,6 +1129,21 @@ files = [
 ]
 
 [[package]]
+name = "python-on-whales"
+version = "0.76.1"
+description = "A Docker client for Python, designed to be fun and intuitive!"
+optional = false
+python-versions = "<4,>=3.8"
+files = [
+    {file = "python_on_whales-0.76.1-py3-none-any.whl", hash = "sha256:7a930ae25e9f07fd2bd3fb2f22c714a62105f7464f985ab342eeebc71c02c22c"},
+    {file = "python_on_whales-0.76.1.tar.gz", hash = "sha256:6ac4ea947a0466402a857a31ce3340b50be8a6f1f7e6075f74fbef410b4914cd"},
+]
+
+[package.dependencies]
+pydantic = ">=2.1.dev0,<3"
+typing-extensions = "*"
+
+[[package]]
 name = "pyyaml"
 version = "6.0.2"
 description = "YAML parser and emitter for Python"
@@ -1629,4 +1644,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b983d52479267873493547db99dd2085b616e05b0354eef10cfa57f9226c8002"
+content-hash = "f45b9f4f8b10eeafe1f1ba81245c5633dc19451ded6d9d555298fb1376011bbf"
