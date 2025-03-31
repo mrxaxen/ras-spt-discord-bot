@@ -1,0 +1,10 @@
+[Unit]
+Description=RAS SPT Discord Bot
+After=network.target
+[Service]
+Type=Simple
+User=xaxen
+ExecStart=/home/xaxen/pleone-services/ras-spt-discord-bot/start.sh
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
