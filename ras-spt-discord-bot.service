@@ -4,6 +4,7 @@ After=network.target
 [Service]
 Type=Simple
 User=xaxen
+WorkingDirectory=/home/xaxen/pleone-services/ras-spt-discord-bot
 ExecStart=/home/xaxen/pleone-services/ras-spt-discord-bot/start.sh
 Restart=on-failure
 [Install]
