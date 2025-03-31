@@ -24,6 +24,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry-pyinstaller-plugin.scripts]
 ras-spt-server-interface = { source = "ras_spt_server_interface/main.py", type = "onefile", bundle = false }
+ras-spt-discord-bot = { source = "ras_spt_discord_bot/main.py", type = "onefile", bundle = false }
 
 [tool.poetry.scripts]
-ras-spt-mod-installer='ras_spt_server_interface.main:main'
+ras-spt-sever-interface='ras_spt_server_interface.main:main'
+ras-spt-discord-bot='ras_spt_discord_bot.main:main'

@@ -29,4 +29,5 @@ jobs:
         with:
           token: ${{ secrets.SPT_RELEASE_TOKEN }}
           files: |
-            dist/pyinstaller/win_amd64/*
+            dist/pyinstaller/*/ras-spt-server-interface
+            dist/pyinstaller/*/ras-spt-discord-bot

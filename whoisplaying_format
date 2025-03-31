@@ -1,0 +1,4 @@
+GET: /fika/presence/get
+b'[{"nickname":"MrXaxen","level":7,"activity":0,"activityStartedTimestamp":1741892182,"raidInformation":null}]'
+b'[{"nickname":"Nekro","level":5,"activity":1,"activityStartedTimestamp":1741892901,"raidInformation":{"location":"bigmap","side":"Pmc","time":"CURR"}}]'
+b'[{"nickname":"Nekro","level":5,"activity":1,"activityStartedTimestamp":1741892901,"raidInformation":{"location":"bigmap","side":"Pmc","time":"CURR"}},{"nickname":"MrXaxen","level":7,"activity":2,"activityStartedTimestamp":1741893976,"raidInformation":null}]'

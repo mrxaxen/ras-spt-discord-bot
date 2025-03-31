@@ -1,7 +1,9 @@
-from abc import ABCMeta, abstractmethod
+# TODO: Apparently most of this is simply wrong, RTFM....
 import os
-from typing import List
+import zlib
 
+from abc import ABCMeta, abstractmethod
+from typing import List
 from httpx import Client
 from discord import InteractionResponseType, InteractionType
 from fastapi import FastAPI, HTTPException, Request
@@ -55,8 +57,8 @@ class SPTPing(SPTCommand):
     def apply(self):
         assert RAS_SPT_WEBSERVER_URL_PING
         try:
-            ping_response = client.get(url=RAS_SPT_WEBSERVER_URL_PING)
-            is_online = "ONLINE" if ping_response.status_code == 200 else "OFFLINE"
+            response = client.get(url=RAS_SPT_WEBSERVER_URL_PING)
+            is_online = "ONLINE" if response.status_code == 200 else "OFFLINE"
         except Exception:
             # TODO: LOG
             is_online = "OFFLINE"
@@ -79,8 +81,8 @@ class SPTStop(SPTCommand):
     def apply(self):
         assert RAS_SPT_SERVER_INTERFACE_URL_STOP
         try:
-            service_call_response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_STOP)
-            stop_success = "SUCCESSFUL" if service_call_response.status_code == 200 else "FAILED"
+            response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_STOP)
+            stop_success = "SUCCESSFUL" if response.status_code == 200 else "FAILED"
         except Exception:
             # TODO: LOG
             stop_success = "FAILED"
@@ -103,8 +105,8 @@ class SPTStart(SPTCommand):
     def apply(self):
         assert RAS_SPT_SERVER_INTERFACE_URL_START
         try:
-            service_call_response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_START)
-            start_success = "SUCCESSFUL" if service_call_response.status_code == 200 else "FAILED"
+            response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_START)
+            start_success = "SUCCESSFUL" if response.status_code == 200 else "FAILED"
         except Exception:
             # TODO: LOG
             start_success = "FAILED"
@@ -127,8 +129,8 @@ class SPTRestart(SPTCommand):
     def apply(self):
         assert RAS_SPT_SERVER_INTERFACE_URL_RESTART
         try:
-            service_call_response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_RESTART)
-            restart_success = "SUCCESSFUL" if service_call_response.status_code == 200 else "FAILED"
+            response = client.post(url=RAS_SPT_SERVER_INTERFACE_URL_RESTART)
+            restart_success = "SUCCESSFUL" if response.status_code == 200 else "FAILED"
         except Exception:
             # TODO: LOG
             restart_success = "FAILED"
@@ -141,6 +143,7 @@ class SPTRestart(SPTCommand):
         }
 
 
+# TODO: Finish currently playing
 class SPTCurrentlyPlaying(SPTCommand):
 
     def matches(self, data):
@@ -152,8 +155,8 @@ class SPTCurrentlyPlaying(SPTCommand):
         assert RAS_SPT_WEBSERVER_URL_CURRENTLY_PLAYING
         try:
             response = client.get(url=RAS_SPT_WEBSERVER_URL_CURRENTLY_PLAYING)
-            current_players = TypeAdapter(List[CurrentPlayer])
-            # TODO: Finish currently playing
+            adapter = TypeAdapter(List[CurrentPlayer])
+            current_players = adapter.validate_json(zlib.decompress(response.content))
         except Exception:
             # TODO: LOG
             is_online = "OFFLINE"
@@ -161,7 +164,7 @@ class SPTCurrentlyPlaying(SPTCommand):
         return {
             "type": InteractionResponseType.channel_message,
             "data": {
-                "content": f"Current players placeholder text"  # TODO: Replace placeholder text
+                "content": f"Current players placeholder text"
             }
         }
 
