@@ -119,6 +119,7 @@ async def restart_headless(ctx: commands.Context):
         author.get_role(RAS_SPT_DISCORD_EFT_ROLE_ID) is not None,  # type: ignore
     ]
     if not all(conditions):
+        print('Condition not met.')
         return
 
     assert RAS_SPT_HEADLESS_CONTAINER_NAME
