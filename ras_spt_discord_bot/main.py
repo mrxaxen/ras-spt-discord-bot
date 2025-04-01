@@ -125,24 +125,9 @@ async def restart_headless(ctx: commands.Context):
     assert RAS_SPT_HEADLESS_CONTAINER_NAME
     container = get_headless_container()
     if container is not None and not is_headless_restarting():
-        asyncio.to_thread(docker.restart, RAS_SPT_HEADLESS_CONTAINER_NAME)  # type: ignore
-
-    restart_success = False
-    for i in range(15):
         await ctx.channel.send('Restarting headless client..')
-        headless_container = get_headless_container()
-
-        if headless_container is not None:
-            restart_success = headless_container.state.running
-
-        if restart_success:
-            await ctx.channel.send('Server is running!')
-            break
-        await asyncio.sleep(1)
-
-    if not restart_success:
-        await ctx.channel.send(
-            f'Server restart timed out, check status with {CMD_PING_SPT_SERVER}, and try again!')
+        docker.restart(RAS_SPT_HEADLESS_CONTAINER_NAME)  # type: ignore
+        await ctx.channel.send('Server is running!')
 
 
 @bot.event
