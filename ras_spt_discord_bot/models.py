@@ -20,3 +20,8 @@ class CurrentPlayer(BaseModel):
     activity: PlayerActivity
     activity_started_timestamp: int = Field(alias='activityStartedTImestamp')
     raid_info: RaidInformation = Field(alias='raidInformation')
+
+
+class ServerTwoPartResponse(BaseModel):
+    first: str
+    final: str
