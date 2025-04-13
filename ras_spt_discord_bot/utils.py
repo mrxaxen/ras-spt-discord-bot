@@ -10,55 +10,58 @@ from models import ServerTwoPartResponse
 
 
 def __read_server_starting_responses():
-    with open('responses/server_starting.json', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_starting.json', 'r') as file:
         adapter = TypeAdapter(list[ServerTwoPartResponse])
-        return adapter.validate_strings(file)
+        content = file.read()
+        return adapter.validate_json(content)
 
 
 def __read_server_restarting_responses():
-    with open('responses/server_restarting.json', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_restarting.json', 'r') as file:
         adapter = TypeAdapter(list[ServerTwoPartResponse])
-        return adapter.validate_strings(file)
+        content = file.read()
+        return adapter.validate_json(content)
 
 
 def __read_server_stopping_responses():
-    with open('responses/server_stopping.json', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_stopping.json', 'r') as file:
         adapter = TypeAdapter(list[ServerTwoPartResponse])
-        return adapter.validate_strings(file)
+        content = file.read()
+        return adapter.validate_json(content)
 
 
 def __read_server_already_stopped_responses():
-    with open('responses/server_already_stopped', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_already_stopped', 'r') as file:
         return file.read().split('\n')
 
 
 def __read_server_ping_dedicated_online_responses():
-    with open('responses/server_ping_dedicated_online', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_ping_dedicated_online', 'r') as file:
         return file.read().split('\n')
 
 
 def __read_server_ping_dedicated_offline_responses():
-    with open('responses/server_ping_dedicated_offline', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_ping_dedicated_offline', 'r') as file:
         return file.read().split('\n')
 
 
 def __read_server_ping_dedicated_restarting_responses():
-    with open('responses/server_ping_dedicated_restarting', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_ping_dedicated_restarting', 'r') as file:
         return file.read().split('\n')
 
 
 def __read_server_ping_headless_online_responses():
-    with open('responses/server_ping_headless_online', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_ping_headless_online', 'r') as file:
         return file.read().split('\n')
 
 
 def __read_server_ping_headless_offline_responses():
-    with open('responses/server_ping_headless_offline', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_ping_headless_offline', 'r') as file:
         return file.read().split('\n')
 
 
 def __read_server_ping_headless_restarting_responses():
-    with open('responses/server_ping_headless_restarting', 'r') as file:
+    with open('ras_spt_discord_bot/responses/server_ping_headless_restarting', 'r') as file:
         return file.read().split('\n')
 
 

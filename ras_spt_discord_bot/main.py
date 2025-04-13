@@ -2,8 +2,8 @@ import random
 import httpx
 import zlib
 import discord
-import conf
-import utils as ras_utils
+import ras_spt_discord_bot.conf as conf
+import ras_spt_discord_bot.utils as ras_utils
 
 from python_on_whales import docker
 from discord.ext import commands
