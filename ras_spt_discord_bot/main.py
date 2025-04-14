@@ -1,3 +1,4 @@
+import asyncio
 import random
 import httpx
 import zlib
@@ -128,6 +129,7 @@ async def stop_headless(ctx: commands.Context):
 
 @bot.event
 async def on_ready():
+    await bot.sync_commands(force=True)
     print(f'Logged in as {bot.user}')
 
 
